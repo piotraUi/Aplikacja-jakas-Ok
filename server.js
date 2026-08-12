@@ -1,9 +1,45 @@
 "use strict";
 
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
 const { WebSocketServer, WebSocket } = require("ws");
 
 const PORT = process.env.PORT || 8080;
-const wss = new WebSocketServer({ port: PORT });
+const PUBLIC_DIR = __dirname;
+
+const MIME_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+};
+
+// Serwuje statyczne pliki gry (index.html/style.css/game.js) i obsługuje
+// WebSocket na tym samym serwerze HTTP, żeby całość dało się wdrożyć jako
+// jedną usługę na hostingu.
+const server = http.createServer((req, res) => {
+  const reqPath = req.url === "/" ? "/index.html" : req.url.split("?")[0];
+  const filePath = path.join(PUBLIC_DIR, path.normalize(reqPath).replace(/^(\.\.[/\\])+/, ""));
+  const ext = path.extname(filePath);
+
+  if (!MIME_TYPES[ext]) {
+    res.writeHead(404);
+    res.end("Not found");
+    return;
+  }
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": MIME_TYPES[ext] });
+    res.end(data);
+  });
+});
+
+const wss = new WebSocketServer({ server });
 
 const PROXIMITY = 90; // maks. odległość (w px świata) uznawana za "od tyłu"
 const HIGHFIVE_COOLDOWN_MS = 5000;
@@ -98,4 +134,6 @@ wss.on("connection", (ws) => {
   });
 });
 
-console.log(`Serwer Dino Bieg (multiplayer) działa na porcie ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Serwer Dino Bieg (multiplayer) działa na porcie ${PORT}`);
+});

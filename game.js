@@ -242,9 +242,13 @@ CHARACTERS.forEach((dino) => {
 });
 
 function defaultServerUrl() {
-  const proto = location.protocol === "https:" ? "wss://" : "ws://";
-  const host = location.hostname || "localhost";
-  return `${proto}${host}:8080`;
+  // Serwer serwuje statyczne pliki i WebSocket na tym samym porcie, więc
+  // domyślnie łączymy się z tym samym źródłem, z którego wczytano stronę.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    const proto = location.protocol === "https:" ? "wss://" : "ws://";
+    return `${proto}${location.host}`;
+  }
+  return "ws://localhost:8080";
 }
 serverInput.value = defaultServerUrl();
 nameInput.value = "Gracz" + Math.floor(Math.random() * 900 + 100);

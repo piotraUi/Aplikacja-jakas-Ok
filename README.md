@@ -2,19 +2,24 @@
 
 Bieganie dinozaurem online z innymi graczami. Dogoń kogoś od tyłu, żeby przybić piątkę i zdobyć bonus punktów.
 
-## Uruchomienie
+Jeden proces Node.js (`server.js`) serwuje zarówno stronę gry, jak i WebSocket multiplayer — do wdrożenia potrzeba tylko jednej usługi.
 
-1. Zainstaluj zależności i odpal serwer multiplayer:
+## Uruchomienie lokalne
 
-   ```
-   npm install
-   node server.js
-   ```
+```
+npm install
+node server.js
+```
 
-   Serwer domyślnie działa na porcie `8080` (zmienna środowiskowa `PORT`, jeśli chcesz inny).
+Otwórz `http://localhost:8080` (albo inny port ustawiony w zmiennej `PORT`). Kilka osób w tej samej sieci może wejść pod ten sam adres i grać razem.
 
-2. Otwórz `index.html` w przeglądarce (np. przez prosty serwer statyczny: `python3 -m http.server 8000`).
+## Wdrożenie na hosting (żeby działało dla wszystkich w internecie)
 
-3. Na ekranie wyboru dinozaura wpisz nick, sprawdź adres serwera (domyślnie `ws://<ten-host>:8080`) i kliknij **Start!**. Kilka osób z tej samej sieci może wejść pod ten sam adres serwera i grać razem.
+Repo ma już gotowe pliki do wdrożenia jednym kliknięciem:
+
+- **Render** — plik `render.yaml` (Blueprint). Wystarczy połączyć repo z kontem Render i wdrożyć jako Web Service (`node server.js`, darmowy plan).
+- **Railway / Heroku-style hosting** — plik `Procfile` (`web: node server.js`).
+
+Po wdrożeniu strona i serwer WebSocket działają pod tym samym publicznym adresem (np. `https://twoja-gra.onrender.com`) — gra sama się do niego podłączy, nic nie trzeba ręcznie konfigurować.
 
 Bez uruchomionego serwera gra działa dalej solo (tylko bez innych graczy i przybijania piątki).
