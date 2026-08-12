@@ -1,0 +1,121 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #bfe9ff 0%, #eafff0 60%, #cdf2c9 100%);
+  font-family: "Segoe UI", Verdana, sans-serif;
+  color: #234;
+}
+
+#app {
+  width: 940px;
+  max-width: 96vw;
+  padding: 20px 20px 30px;
+  background: #ffffffcc;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 2rem;
+}
+
+.screen.hidden {
+  display: none;
+}
+
+#character-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.char-card {
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: #f4fbff;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.char-card:hover {
+  transform: translateY(-4px);
+}
+
+.char-card.selected {
+  border-color: #3fae4f;
+  background: #eaffea;
+}
+
+.char-card canvas {
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.char-card .name {
+  margin-top: 6px;
+  font-weight: bold;
+}
+
+.char-card .desc {
+  font-size: 0.8rem;
+  color: #567;
+}
+
+button {
+  font-size: 1.1rem;
+  padding: 10px 22px;
+  margin: 6px;
+  border: none;
+  border-radius: 12px;
+  background: #3fae4f;
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: #329142;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#hud {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 0 6px 8px;
+}
+
+#game-canvas {
+  width: 100%;
+  max-width: 900px;
+  background: #fdfefe;
+  border-radius: 14px;
+  border: 3px solid #b6e2b0;
+  touch-action: manipulation;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #678;
+}
+
+#final-score {
+  font-size: 1.3rem;
+  font-weight: bold;
+}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Dino Bieg</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <h1>🦕 Dino Bieg 🦕</h1>
+
+    <div id="select-screen" class="screen">
+      <h2>Wybierz swojego dinozaura</h2>
+      <div id="character-grid"></div>
+      <button id="start-btn" disabled>Start!</button>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+      <div id="hud">
+        <span id="score-label">Wynik: 0</span>
+        <span id="best-label">Rekord: 0</span>
+      </div>
+      <canvas id="game-canvas" width="900" height="300"></canvas>
+      <p class="hint">Spacja / strzałka w górę / dotknij ekranu = skok</p>
+    </div>
+
+    <div id="gameover-screen" class="screen hidden">
+      <h2>Koniec gry!</h2>
+      <p id="final-score"></p>
+      <button id="retry-btn">Zagraj jeszcze raz</button>
+      <button id="change-btn">Zmień dinozaura</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
