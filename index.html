@@ -7,28 +7,34 @@
 </head>
 <body>
   <div id="app">
-    <h1>🦕 Dino Bieg 🦕</h1>
+    <h1>🦕 Dino Bieg — tryb społecznościowy 🦕</h1>
 
     <div id="select-screen" class="screen">
       <h2>Wybierz swojego dinozaura</h2>
       <div id="character-grid"></div>
+
+      <div id="join-form">
+        <input id="name-input" type="text" maxlength="16" placeholder="Twój nick">
+        <input id="server-input" type="text" placeholder="Adres serwera (ws://...)">
+      </div>
+      <p id="conn-status" class="hint">🔌 Niepołączono</p>
+
       <button id="start-btn" disabled>Start!</button>
     </div>
 
     <div id="game-screen" class="screen hidden">
       <div id="hud">
         <span id="score-label">Wynik: 0</span>
-        <span id="best-label">Rekord: 0</span>
+        <span id="online-label">Online: 0</span>
+        <button id="leave-btn">Zmień dinozaura</button>
       </div>
-      <canvas id="game-canvas" width="900" height="300"></canvas>
-      <p class="hint">Spacja / strzałka w górę / dotknij ekranu = skok</p>
-    </div>
-
-    <div id="gameover-screen" class="screen hidden">
-      <h2>Koniec gry!</h2>
-      <p id="final-score"></p>
-      <button id="retry-btn">Zagraj jeszcze raz</button>
-      <button id="change-btn">Zmień dinozaura</button>
+      <div id="game-wrap">
+        <canvas id="game-canvas" width="900" height="300"></canvas>
+        <button id="highfive-btn" class="hidden">🖐 Przybij piątkę!</button>
+        <div id="highfive-toast" class="hidden"></div>
+        <div id="stumble-toast" class="hidden"></div>
+      </div>
+      <p class="hint">Spacja / strzałka w górę / dotknij ekranu = skok. Podejdź do kogoś od tyłu, żeby przybić piątkę!</p>
     </div>
   </div>
 

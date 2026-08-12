@@ -1,0 +1,13 @@
+{
+  "name": "dino-bieg-multiplayer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serwer WebSocket dla gry Dino Bieg (tryb multiplayer/społecznościowy)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
