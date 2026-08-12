@@ -24,17 +24,32 @@
 
     <div id="game-screen" class="screen hidden">
       <div id="hud">
-        <span id="score-label">Wynik: 0</span>
         <span id="online-label">Online: 0</span>
+        <span id="hearts-label">🤝 Przybite piątki: 0</span>
         <button id="leave-btn">Zmień dinozaura</button>
       </div>
       <div id="game-wrap">
-        <canvas id="game-canvas" width="900" height="300"></canvas>
+        <canvas id="game-canvas" width="900" height="420"></canvas>
         <button id="highfive-btn" class="hidden">🖐 Przybij piątkę!</button>
         <div id="highfive-toast" class="hidden"></div>
-        <div id="stumble-toast" class="hidden"></div>
       </div>
-      <p class="hint">Spacja / strzałka w górę / dotknij ekranu = skok. Podejdź do kogoś od tyłu, żeby przybić piątkę!</p>
+
+      <div id="emote-row">
+        <button class="emote-btn" data-emoji="👋" title="Pomachaj">👋</button>
+        <button class="emote-btn" data-emoji="❤️" title="Serduszko">❤️</button>
+        <button class="emote-btn" data-emoji="😂" title="Śmiech">😂</button>
+        <button class="emote-btn" data-emoji="😮" title="Zdziwienie">😮</button>
+      </div>
+
+      <div id="chat-panel">
+        <div id="chat-log"></div>
+        <form id="chat-form">
+          <input id="chat-input" type="text" maxlength="140" placeholder="Napisz coś do innych...">
+          <button type="submit">Wyślij</button>
+        </form>
+      </div>
+
+      <p class="hint">Strzałki / WASD = ruch. Podejdź do kogoś, żeby przybić piątkę!</p>
     </div>
   </div>
 

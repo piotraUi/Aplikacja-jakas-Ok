@@ -41,10 +41,13 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
-const PROXIMITY = 90; // maks. odległość (w px świata) uznawana za "od tyłu"
+const HIGHFIVE_RANGE = 70; // maks. odległość euklidesowa uznawana za "blisko"
 const HIGHFIVE_COOLDOWN_MS = 5000;
+const CHAT_MIN_INTERVAL_MS = 600;
+const EMOTE_MIN_INTERVAL_MS = 400;
+const ALLOWED_EMOTES = new Set(["👋", "❤️", "😂", "😮"]);
 
-const players = new Map(); // id -> { id, name, character, worldX, ws }
+const players = new Map(); // id -> { id, name, character, x, y, dir, ws, lastChatAt, lastEmoteAt }
 const highfiveCooldowns = new Map(); // "id1|id2" -> timestamp ostatniego przybicia
 
 let nextId = 1;
@@ -64,6 +67,10 @@ function broadcast(obj, exceptId) {
   }
 }
 
+function randomSpawn() {
+  return { x: Math.round(300 + Math.random() * 300), y: Math.round(200 + Math.random() * 140) };
+}
+
 wss.on("connection", (ws) => {
   const id = String(nextId++);
   let player = null;
@@ -79,29 +86,56 @@ wss.on("connection", (ws) => {
     if (msg.type === "join") {
       const name = String(msg.name || "Gracz").slice(0, 16) || "Gracz";
       const character = String(msg.character || "piotrusia").slice(0, 20);
-      player = { id, name, character, worldX: 0, ws };
+      const spawn = randomSpawn();
+      player = { id, name, character, x: spawn.x, y: spawn.y, dir: 1, ws, lastChatAt: 0, lastEmoteAt: 0 };
       players.set(id, player);
 
       send(ws, {
         type: "welcome",
         id,
+        x: spawn.x,
+        y: spawn.y,
         players: [...players.values()]
           .filter((p) => p.id !== id)
-          .map((p) => ({ id: p.id, name: p.name, character: p.character, worldX: p.worldX })),
+          .map((p) => ({ id: p.id, name: p.name, character: p.character, x: p.x, y: p.y, dir: p.dir })),
       });
 
-      broadcast({ type: "joined", id, name, character, worldX: 0 }, id);
+      broadcast({ type: "joined", id, name, character, x: spawn.x, y: spawn.y, dir: 1 }, id);
       return;
     }
 
     if (!player) return;
 
     if (msg.type === "move") {
-      const worldX = Number(msg.worldX);
-      if (Number.isFinite(worldX)) {
-        player.worldX = worldX;
-        broadcast({ type: "move", id, worldX: player.worldX }, id);
+      const x = Number(msg.x);
+      const y = Number(msg.y);
+      const dir = msg.dir === -1 ? -1 : 1;
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        player.x = x;
+        player.y = y;
+        player.dir = dir;
+        broadcast({ type: "move", id, x, y, dir }, id);
       }
+      return;
+    }
+
+    if (msg.type === "chat") {
+      const now = Date.now();
+      if (now - player.lastChatAt < CHAT_MIN_INTERVAL_MS) return;
+      const text = String(msg.text || "").trim().slice(0, 140);
+      if (!text) return;
+      player.lastChatAt = now;
+      broadcast({ type: "chat", id, name: player.name, text });
+      return;
+    }
+
+    if (msg.type === "emote") {
+      const now = Date.now();
+      if (now - player.lastEmoteAt < EMOTE_MIN_INTERVAL_MS) return;
+      const emoji = String(msg.emoji || "");
+      if (!ALLOWED_EMOTES.has(emoji)) return;
+      player.lastEmoteAt = now;
+      broadcast({ type: "emote", id, emoji });
       return;
     }
 
@@ -110,8 +144,8 @@ wss.on("connection", (ws) => {
       const target = players.get(targetId);
       if (!target || targetId === id) return;
 
-      const dist = Math.abs(target.worldX - player.worldX);
-      if (dist > PROXIMITY) return; // serwer potwierdza bliskość
+      const dist = Math.hypot(target.x - player.x, target.y - player.y);
+      if (dist > HIGHFIVE_RANGE) return; // serwer potwierdza bliskość
 
       const key = pairKey(id, targetId);
       const now = Date.now();
