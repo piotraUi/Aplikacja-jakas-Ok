@@ -42,6 +42,7 @@ enum ControlId : int {
     IDC_EDIT_DST,
     IDC_BTN_PICK_DST,
     IDC_COMBO_THREADS,
+    IDC_COMBO_VERIFY,
     IDC_BTN_COPY,
     IDC_BTN_CANCEL,
     IDC_PROGRESS,
@@ -127,11 +128,14 @@ struct AppState {
     HWND statusText = nullptr;
     HWND errorList = nullptr;
 
+    HWND verifyCombo = nullptr;
+
     std::vector<std::wstring> sourceFolders;
     std::wstring destFolder;
 
     std::unique_ptr<CopyEngine> engine;
     ULONGLONG copyStartTick = 0;
+    VerifyMode lastVerifyMode = VerifyMode::SizeOnly;
 };
 
 void RefreshSrcListBox(AppState& state) {
@@ -149,6 +153,7 @@ void SetControlsEnabled(AppState& state, bool copying) {
     EnableWindow(GetDlgItem(state.hwnd, IDC_BTN_CLEAR_SRC), !copying);
     EnableWindow(GetDlgItem(state.hwnd, IDC_BTN_PICK_DST), !copying);
     EnableWindow(state.threadsCombo, !copying);
+    EnableWindow(state.verifyCombo, !copying);
 }
 
 // Refuses to start a copy where the destination is the same as, or nested
@@ -199,13 +204,20 @@ void StartCopy(AppState& state) {
     unsigned threads = static_cast<unsigned>(_wtoi(buf));
     if (threads == 0) threads = 8;
 
+    int verifySel = static_cast<int>(SendMessageW(state.verifyCombo, CB_GETCURSEL, 0, 0));
+    VerifyMode verifyMode = VerifyMode::SizeOnly;
+    if (verifySel == 0) verifyMode = VerifyMode::None;
+    else if (verifySel == 1) verifyMode = VerifyMode::SizeOnly;
+    else if (verifySel == 2) verifyMode = VerifyMode::FullHash;
+    state.lastVerifyMode = verifyMode;
+
     SendMessageW(state.errorList, LB_RESETCONTENT, 0, 0);
     SendMessageW(state.progress, PBM_SETPOS, 0, 0);
     SetWindowTextW(state.statusText, L"Rozpoczynanie...");
 
     state.engine = std::make_unique<CopyEngine>();
     state.copyStartTick = GetTickCount64();
-    state.engine->Start(state.sourceFolders, state.destFolder, threads);
+    state.engine->Start(state.sourceFolders, state.destFolder, threads, verifyMode);
 
     SetControlsEnabled(state, true);
     SetTimer(state.hwnd, IDT_PROGRESS_TIMER, 150, nullptr);
@@ -224,6 +236,8 @@ void PollProgress(AppState& state) {
     uint64_t totalFiles = stats.totalFiles.load();
     uint64_t copiedFiles = stats.copiedFiles.load();
     uint64_t failed = stats.failedFiles.load();
+    uint64_t verified = stats.verifiedFiles.load();
+    uint64_t mismatched = stats.mismatchFiles.load();
 
     if (stats.enumerating.load()) {
         std::wstringstream ss;
@@ -247,7 +261,9 @@ void PollProgress(AppState& state) {
         std::wstringstream ss;
         ss << L"Skopiowano " << copiedFiles << L" z " << totalFiles << L" plików ("
            << FormatBytes(copiedBytes) << L" z " << FormatBytes(totalBytes) << L")";
+        if (state.lastVerifyMode != VerifyMode::None) ss << L", zweryfikowano: " << verified;
         if (failed > 0) ss << L" — błędów: " << failed;
+        if (mismatched > 0) ss << L" — niezgodności: " << mismatched;
         SetWindowTextW(state.statusText, ss.str().c_str());
     }
 
@@ -262,7 +278,12 @@ void PollProgress(AppState& state) {
         } else {
             summary << L"Gotowe: " << copiedFiles << L" z " << totalFiles << L" plików ("
                     << FormatBytes(copiedBytes) << L") w " << FormatElapsed(elapsed) << L".";
-            if (failed > 0) summary << L" Błędów: " << failed << L" (patrz lista poniżej).";
+            if (state.lastVerifyMode != VerifyMode::None) {
+                summary << L" Zweryfikowano: " << verified << L".";
+            }
+            if (failed > 0) summary << L" Błędów: " << failed << L".";
+            if (mismatched > 0) summary << L" NIEZGODNOŚCI (kopia różni się od źródła): " << mismatched << L"!";
+            if (failed > 0 || mismatched > 0) summary << L" Patrz lista poniżej.";
         }
         SetWindowTextW(state.statusText, summary.str().c_str());
     }
@@ -304,6 +325,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 SendMessageW(state->threadsCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(v));
             }
             SendMessageW(state->threadsCombo, CB_SELECTSTRING, static_cast<WPARAM>(-1), reinterpret_cast<LPARAM>(L"8"));
+
+            mk(L"STATIC", L"Weryfikacja po skopiowaniu:", 0, 300, 230, 150, 18, 0);
+            state->verifyCombo = mk(L"COMBOBOX", nullptr, WS_BORDER | CBS_DROPDOWNLIST, 452, 226, 150, 200, IDC_COMBO_VERIFY);
+            SendMessageW(state->verifyCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Brak"));
+            SendMessageW(state->verifyCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Szybka (rozmiar)"));
+            SendMessageW(state->verifyCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Pełna (SHA-256)"));
+            SendMessageW(state->verifyCombo, CB_SETCURSEL, 1, 0);
 
             state->copyBtn = mk(L"BUTTON", L"Kopiuj", WS_TABSTOP | BS_DEFPUSHBUTTON, 12, 264, 120, 34, IDC_BTN_COPY);
             state->cancelBtn = mk(L"BUTTON", L"Anuluj", WS_TABSTOP, 140, 264, 120, 34, IDC_BTN_CANCEL);

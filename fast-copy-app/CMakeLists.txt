@@ -28,4 +28,4 @@ else()
 endif()
 
 target_compile_definitions(FastCopy PRIVATE UNICODE _UNICODE)
-target_link_libraries(FastCopy PRIVATE comctl32 shell32 ole32 uuid gdi32 comdlg32)
+target_link_libraries(FastCopy PRIVATE comctl32 shell32 ole32 uuid gdi32 comdlg32 bcrypt)

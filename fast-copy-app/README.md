@@ -35,6 +35,30 @@ UI), a nie na sam transfer danych. Ta aplikacja:
   wyrównania unbuffered I/O tylko by szkodził.
 - **Wspiera długie ścieżki** (`\\?\...`) — nie wywala się na limicie 260
   znaków, na który czasem trafia Eksplorator.
+- **Indeksowanie (skanowanie drzewa folderów) też jest wielowątkowe** — kilka
+  wątków przegląda różne podfoldery naraz zamiast czekać po kolei na każdy
+  odczyt katalogu. Przy strukturach z dużą liczbą podfolderów (typowe dla
+  projektów programistycznych) to realnie skraca fazę "Skanowanie
+  plików...", bo ukrywa opóźnienie dysku/systemu plików nakładając wiele
+  takich odczytów na siebie.
+
+## Weryfikacja skopiowanych plików
+
+Po skopiowaniu każdego pliku aplikacja może dodatkowo sprawdzić, czy kopia
+jest identyczna z oryginałem — ważne, jeśli kopiujesz coś przed
+skasowaniem źródła (np. przed resetem systemu):
+
+- **Brak** — bez dodatkowego sprawdzania (najszybsze).
+- **Szybka (rozmiar)** *(domyślna)* — porównuje rozmiar pliku źródłowego i
+  skopiowanego. Wykrywa ucięte/niepełne kopie, prawie bez kosztu czasowego.
+- **Pełna (SHA-256)** — liczy sumę kontrolną SHA-256 obu plików i
+  porównuje. Wykrywa też ciche uszkodzenia bit-po-bicie, ale odczytuje
+  każdy plik jeszcze raz z obu stron, więc jest wyraźnie wolniejsza —
+  warto użyć przed nieodwracalną operacją (np. przed resetem komputera),
+  gdy zależy Ci na stuprocentowej pewności.
+
+Wynik (liczba zweryfikowanych plików / niezgodności) pojawia się na
+pasku statusu i w dzienniku błędów po zakończeniu kopiowania.
 
 Rzeczywiste przyspieszenie zależy od nośnika: na SSD z NVMe/SATA
 wielowątkowość daje wyraźny zysk (kolejkowanie poleceń, wiele operacji I/O

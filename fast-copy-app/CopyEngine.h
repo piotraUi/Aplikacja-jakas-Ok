@@ -8,6 +8,16 @@
 #include <deque>
 #include <thread>
 
+// How thoroughly a copied file is checked against its source afterwards.
+// This matters when the copy is a one-shot backup before something
+// destructive (a factory reset, deleting the source) — "the file count
+// matches" is not the same guarantee as "every byte matches".
+enum class VerifyMode {
+    None,      // no post-copy check beyond CopyFileEx's own success/failure
+    SizeOnly,  // compare destination file size to source (cheap, catches truncation)
+    FullHash,  // compare SHA-256 of source and destination (catches silent corruption too, but reads every file twice)
+};
+
 // Multithreaded folder-copy engine.
 //
 // Explorer copies one file at a time and spends most of its time on
@@ -23,6 +33,8 @@ public:
         std::atomic<uint64_t> copiedFiles{0};
         std::atomic<uint64_t> copiedBytes{0};
         std::atomic<uint64_t> failedFiles{0};
+        std::atomic<uint64_t> verifiedFiles{0};
+        std::atomic<uint64_t> mismatchFiles{0};
         std::atomic<bool> enumerating{true};
         std::atomic<bool> finished{false};
     };
@@ -33,7 +45,8 @@ public:
     // Starts the copy on a background thread. sources are the folders the
     // user picked; each is copied INTO destRoot as destRoot\<folder name>\...
     // Safe to call once per instance.
-    void Start(std::vector<std::wstring> sources, std::wstring destRoot, unsigned threadCount);
+    void Start(std::vector<std::wstring> sources, std::wstring destRoot, unsigned threadCount,
+               VerifyMode verifyMode = VerifyMode::SizeOnly);
 
     // Requests cancellation; safe to call from the UI thread at any time.
     void Cancel();
@@ -57,7 +70,10 @@ private:
     void RunEnumerationAndCopy(std::vector<std::wstring> sources, std::wstring destRoot, unsigned threadCount);
     void WorkerLoop();
     bool CopyOneFile(const FileTask& task);
+    bool VerifyOneFile(const FileTask& task);
     void LogError(const std::wstring& msg);
+
+    VerifyMode verifyMode_ = VerifyMode::SizeOnly;
 
     std::thread driver_;
     std::vector<std::thread> workers_;
