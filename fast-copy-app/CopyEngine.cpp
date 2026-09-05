@@ -41,6 +41,18 @@ std::wstring ToLongPath(const std::wstring& path) {
     return L"\\\\?\\" + path;
 }
 
+// Reparse points cover both symlinks AND NTFS junctions/mount points (the
+// latter are common in Windows user profiles and aren't guaranteed to be
+// recognized by std::filesystem::is_symlink on every standard library).
+// Checking the raw attribute directly is the reliable way to catch both,
+// which matters because either can point back up the tree and turn a
+// recursive walk into an infinite loop.
+bool IsReparsePoint(const std::wstring& longPath) {
+    DWORD attrs = GetFileAttributesW(longPath.c_str());
+    if (attrs == INVALID_FILE_ATTRIBUTES) return false;
+    return (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+}
+
 std::wstring GetLastErrorMessage(DWORD err) {
     LPWSTR buf = nullptr;
     DWORD len = FormatMessageW(
@@ -191,6 +203,18 @@ void CopyEngine::RunEnumerationAndCopy(std::vector<std::wstring> sources, std::w
                     const fs::directory_entry& entry = *it;
                     std::error_code entryEc;
                     fs::path destPath = task.dst / entry.path().filename();
+
+                    // Symlinks/junctions/reparse points (common in Windows user
+                    // profiles, OneDrive, npm/pnpm) can point back up the tree
+                    // and turn a naive recursive walk into an infinite loop —
+                    // this is what made scanning hang forever. Skip them
+                    // entirely rather than traversing, same as plain
+                    // recursive_directory_iterator's default (non-follow)
+                    // behavior that the old single-threaded scan relied on.
+                    if (IsReparsePoint(ToLongPath(entry.path().wstring()))) {
+                        LogError(L"Pominięto link/skrót (nie jest podążany, by uniknąć pętli): " + entry.path().wstring());
+                        continue;
+                    }
 
                     if (entry.is_directory(entryEc)) {
                         CreateDirectoryW(ToLongPath(destPath.wstring()).c_str(), nullptr);
